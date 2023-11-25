@@ -11,7 +11,7 @@ use unreal_asset::exports::Export;
 use unreal_asset::properties::Property;
 use ordered_float::OrderedFloat;
 
-/// Parse Pseudoregalia time trial text file into cooked Unreal Engine data table
+/// Parse Pseudoregalia time trial text files into cooked Unreal Engine data tables
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -102,9 +102,13 @@ fn main() -> Result<(), ParseError> {
     for waypoint in waypoint_map.vec.iter() {
         fnames.push(asset.add_fname(&waypoint.name));
     }
+    let new_main_export_name = Path::new(&args.output).file_stem().unwrap().to_string_lossy();
+    let new_main_export_fname = asset.add_fname(&new_main_export_name);
 
     let export = asset.get_export_mut(PackageIndex::new(1)).unwrap();
     assert!(export.get_base_export().object_name.get_owned_content() == "DT_SampleWaypointTable");
+    export.get_base_export_mut().object_name = new_main_export_fname;
+
     if let Export::DataTableExport(export) = export {
         let row = &export.table.data[1];
         let mut new_rows = vec![];
