@@ -1,15 +1,15 @@
 use clap::Parser;
-use std::fs::File;
-use std::path::Path;
-use std::collections::HashMap;
-use unreal_asset::Asset;
-use regex::Regex;
-use std::io::Cursor;
-use unreal_asset::types::PackageIndex;
-use unreal_asset::exports::ExportBaseTrait;
-use unreal_asset::exports::Export;
-use unreal_asset::properties::Property;
 use ordered_float::OrderedFloat;
+use regex::Regex;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::Cursor;
+use std::path::Path;
+use unreal_asset::exports::Export;
+use unreal_asset::exports::ExportBaseTrait;
+use unreal_asset::properties::Property;
+use unreal_asset::types::PackageIndex;
+use unreal_asset::Asset;
 
 /// Parse Pseudoregalia time trial text files into cooked Unreal Engine data tables
 #[derive(Parser, Debug)]
@@ -44,7 +44,11 @@ struct ParseError {
 
 impl std::fmt::Debug for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "line {}: '{}', token {}: '{}'\nReason: {}", self.line_number, self.line, self.token_number, self.token, self.error)
+        write!(
+            f,
+            "line {}: '{}', token {}: '{}'\nReason: {}",
+            self.line_number, self.line, self.token_number, self.token, self.error
+        )
     }
 }
 
@@ -63,7 +67,7 @@ impl WaypointIndexMap {
     fn get_by_name(&self, name: &str) -> Option<usize> {
         self.hash_map.get(name).cloned()
     }
-    
+
     fn get_by_number(&self, number: &usize) -> Option<usize> {
         self.number_map.get(number).cloned()
     }
@@ -102,7 +106,10 @@ fn main() -> Result<(), ParseError> {
     for waypoint in waypoint_map.vec.iter() {
         fnames.push(asset.add_fname(&waypoint.name));
     }
-    let new_main_export_name = Path::new(&args.output).file_stem().unwrap().to_string_lossy();
+    let new_main_export_name = Path::new(&args.output)
+        .file_stem()
+        .unwrap()
+        .to_string_lossy();
     let new_main_export_fname = asset.add_fname(&new_main_export_name);
 
     let export = asset.get_export_mut(PackageIndex::new(1)).unwrap();
@@ -146,7 +153,6 @@ fn main() -> Result<(), ParseError> {
         export.table.data = new_rows;
     }
 
-
     let output_uasset_path = Path::new(&args.output);
     let mut output_uasset_file = File::create(output_uasset_path).unwrap();
     let output_uexp_path = output_uasset_path.with_extension("uexp");
@@ -154,7 +160,7 @@ fn main() -> Result<(), ParseError> {
     asset
         .write_data(&mut output_uasset_file, Some(&mut output_uexp_file))
         .unwrap();
-    
+
     Ok(())
 }
 
@@ -176,25 +182,62 @@ fn parse_time_trial_data(data: &str) -> Result<WaypointIndexMap, ParseError> {
         let line = line.to_string();
         if tokens.len() < 3 {
             let error = "fewer than 3 tokens".to_string();
-            return Err(ParseError{line_number, line, token_number, token: "".to_string(), error});
+            return Err(ParseError {
+                line_number,
+                line,
+                token_number,
+                token: "".to_string(),
+                error,
+            });
         }
         let x = match i32::from_str_radix(tokens[token_number], 10) {
             Ok(number) => number as f64,
-            Err(error) => return Err(ParseError{line_number, line, token_number, token: tokens[token_number].to_string(), error: error.to_string()}),
+            Err(error) => {
+                return Err(ParseError {
+                    line_number,
+                    line,
+                    token_number,
+                    token: tokens[token_number].to_string(),
+                    error: error.to_string(),
+                })
+            }
         };
         token_number += 1;
         let y = match i32::from_str_radix(tokens[token_number], 10) {
             Ok(number) => number as f64,
-            Err(error) => return Err(ParseError{line_number, line, token_number, token: tokens[token_number].to_string(), error: error.to_string()}),
+            Err(error) => {
+                return Err(ParseError {
+                    line_number,
+                    line,
+                    token_number,
+                    token: tokens[token_number].to_string(),
+                    error: error.to_string(),
+                })
+            }
         };
         token_number += 1;
         let z = match i32::from_str_radix(tokens[token_number], 10) {
             Ok(number) => number as f64,
-            Err(error) => return Err(ParseError{line_number, line, token_number, token: tokens[token_number].to_string(), error: error.to_string()}),
+            Err(error) => {
+                return Err(ParseError {
+                    line_number,
+                    line,
+                    token_number,
+                    token: tokens[token_number].to_string(),
+                    error: error.to_string(),
+                })
+            }
         };
         token_number += 1;
         if token_number >= tokens.len() {
-            waypoint_map.add(Waypoint{x, y, z, gates, name, number: line_number});
+            waypoint_map.add(Waypoint {
+                x,
+                y,
+                z,
+                gates,
+                name,
+                number: line_number,
+            });
             continue;
         }
         if tokens[token_number] == "<" {
@@ -203,16 +246,35 @@ fn parse_time_trial_data(data: &str) -> Result<WaypointIndexMap, ParseError> {
         } else {
             // consume name field
             if let Err(error) = validate_name_token(tokens[token_number]) {
-                return Err(ParseError{line_number, line, token_number, token: tokens[token_number].to_string(), error});
+                return Err(ParseError {
+                    line_number,
+                    line,
+                    token_number,
+                    token: tokens[token_number].to_string(),
+                    error,
+                });
             }
             name = tokens[token_number].to_string();
             token_number += 1;
             if token_number >= tokens.len() {
-                waypoint_map.add(Waypoint{x, y, z, gates, name, number: line_number});
+                waypoint_map.add(Waypoint {
+                    x,
+                    y,
+                    z,
+                    gates,
+                    name,
+                    number: line_number,
+                });
                 continue;
             }
             if tokens[token_number] != "<" {
-                return Err(ParseError{line_number, line, token_number, token: tokens[token_number].to_string(), error: format!("token after name must be gate delimiter '<'")});
+                return Err(ParseError {
+                    line_number,
+                    line,
+                    token_number,
+                    token: tokens[token_number].to_string(),
+                    error: format!("token after name must be gate delimiter '<'"),
+                });
             }
             token_number += 1;
         }
@@ -225,17 +287,40 @@ fn parse_time_trial_data(data: &str) -> Result<WaypointIndexMap, ParseError> {
             if let Ok(i) = i32::from_str_radix(gate_name, 10) {
                 match waypoint_map.get_by_number(&(i as usize)) {
                     Some(i) => gates.push(i as i32),
-                    None => return Err(ParseError{line_number, line, token_number, token: tokens[token_number].to_string(), error: format!("unrecognized waypoint number")}),
+                    None => {
+                        return Err(ParseError {
+                            line_number,
+                            line,
+                            token_number,
+                            token: tokens[token_number].to_string(),
+                            error: format!("unrecognized waypoint number"),
+                        })
+                    }
                 };
                 continue;
             }
             match waypoint_map.get_by_name(gate_name) {
                 Some(i) => gates.push(i as i32),
-                None => return Err(ParseError{line_number, line, token_number, token: tokens[token_number].to_string(), error: format!("unrecognized waypoint name")}),
+                None => {
+                    return Err(ParseError {
+                        line_number,
+                        line,
+                        token_number,
+                        token: tokens[token_number].to_string(),
+                        error: format!("unrecognized waypoint name"),
+                    })
+                }
             };
         }
 
-        waypoint_map.add(Waypoint{x, y, z, gates, name, number: line_number});
+        waypoint_map.add(Waypoint {
+            x,
+            y,
+            z,
+            gates,
+            name,
+            number: line_number,
+        });
     }
     Ok(waypoint_map)
 }
